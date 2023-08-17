@@ -15,7 +15,12 @@ from lib.multihost_utils import shard_array_to_multihost, shard_model_params_to_
 from lib.param_utils import load_params
 from lib.seeding import BEST_INTEGER
 
-tokenizer = LlamaTokenizer.from_pretrained('../llama-weights/llama2-7B')
+from os.path import join as pjoin
+
+BASE_WEIGHTS_PATH = '/media/anique/Data/projects/llama-weights'
+SEQ_LENGTH = 256
+
+tokenizer = LlamaTokenizer.from_pretrained(pjoin(BASE_WEIGHTS_PATH, 'llama2-7B'))
 tokenizer.pad_token = tokenizer.eos_token  # TODO: verify this
 sentences = [
     'I believe the meaning of life is',
@@ -24,10 +29,10 @@ sentences = [
 ]
 
 def main() -> None:
-    initialise_tpu('v4-16', n_devices=8, rank=0)
+    # initialise_tpu('v4-16', n_devices=8, rank=0)
     is_process_0 = jax.process_index() == 0
     if is_process_0:
-        print(jax.devices)
+        print(jax.devices())
     initialise_tracking()
 
     key = rand.PRNGKey(BEST_INTEGER)
@@ -37,7 +42,7 @@ def main() -> None:
     params = shard_model_params_to_multihost(params)
 
     # top_k_config = TopKGenerationConfig(eos_token_id=tokenizer.eos_token_id, max_length=128, top_k=10)
-    top_p_config = TopPGenerationConfig(eos_token_id=tokenizer.eos_token_id, max_length=128, top_p=0.9)
+    top_p_config = TopPGenerationConfig(eos_token_id=tokenizer.eos_token_id, max_length=SEQ_LENGTH, top_p=0.9)
 
     inputs = tokenizer(sentences, max_length=top_p_config.max_length, padding='max_length', return_tensors='jax')
     seq = inputs.input_ids.astype(jnp.uint16)

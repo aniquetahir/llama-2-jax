@@ -6,9 +6,20 @@ from typing import Any, NamedTuple
 from .ModelConfig import ModelConfig
 from .llama_model import LlamaModel, check_llama_model, init_llama_model
 
+
 class Llama(NamedTuple):
     model: LlamaModel
     lm_head: Any  # Array
+
+
+# class LlamaLora(NamedTuple):
+#     model: LlamaLoraModel
+#     lm_head: Any
+#
+#     def __init__(self, loraConfig, llama: LlamaModel):
+#         self.model = LlamaLoraModel(loraConfig, llama.model)
+#         self.lm_head = llama.lm_head
+
 
 def check_llama(params: Llama, *, model_config: ModelConfig) -> None:
     assert isinstance(params.model, LlamaModel)

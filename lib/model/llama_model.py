@@ -6,7 +6,7 @@ import jax.random as rand
 from typing import Any, NamedTuple
 
 from .ModelConfig import ModelConfig
-from .decoder import Decoder, check_decoder, decoder, init_decoder
+from .decoder import Decoder, check_decoder, decoder, init_decoder, decoder_lora
 from .embedding import check_embedding, embedding, init_embedding
 from .rms_norm import check_rms_norm, init_rms_norm, rms_norm
 
@@ -15,6 +15,14 @@ class LlamaModel(NamedTuple):
     decoder: Decoder
     norm: Any  # Array
 
+# class LlamaLoraModel(NamedTuple):
+#     embedding: Any
+#     decoder: LoraDecoder
+#     norm: Any
+#
+# def create_llama_lora_model(loraConfig, llama: LlamaModel) -> LlamaLoraModel:
+#     return LlamaLoraModel(embedding=llama.embedding, decoder=create_lora_decoder(loraConfig, llama.decoder), norm=llama.norm)
+#
 def check_llama_model(params: LlamaModel, *, model_config: ModelConfig) -> None:
     assert isinstance(params.embedding, Array)
     assert isinstance(params.decoder, Decoder)
@@ -45,5 +53,23 @@ def llama_model(params: LlamaModel, seq: Array, attn_mask: Array, *, key: rand.K
 
     seq = embedding(params.embedding, seq)
     seq = decoder(params.decoder, seq, attn_mask, key=key, model_config=model_config)
+    seq = rms_norm(params.norm, seq, model_config=model_config)
+    return seq
+
+
+@partial(jax.jit, static_argnames=('lora_config', 'model_config'))
+def llama_model_lora(lora_params, lora_config, params: LlamaModel, seq: Array, attn_mask: Array, *, key: rand.KeyArray, model_config: ModelConfig) -> Array:
+    assert isinstance(seq, Array)
+    assert isinstance(attn_mask, Array)
+    assert seq.dtype == jnp.uint16
+    assert attn_mask.dtype == jnp.bool_
+    assert seq.shape == attn_mask.shape
+    assert model_config.d_k % 2 == 0
+    assert key is None or model_config.dropout_rate is not None
+
+    attn_mask = jnp.tril(jnp.einsum('bi,bj->bij', attn_mask, attn_mask))[:, None, None]
+
+    seq = embedding(params.embedding, seq)
+    seq = decoder_lora(lora_params, lora_config, params.decoder, seq, attn_mask, key=key, model_config=model_config)
     seq = rms_norm(params.norm, seq, model_config=model_config)
     return seq

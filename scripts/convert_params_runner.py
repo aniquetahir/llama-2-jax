@@ -8,11 +8,13 @@ from transformers import LlamaForCausalLM
 
 from lib.model import check_llama, model_config_llama1_7B, model_config_llama2_70B, model_config_llama2_7B
 from lib.param_utils import convert_llama, save_params
+from os.path import join as pjoin
 
+BASE_PATH = '/media/anique/Data/projects/llama-weights'
 pairs = {
-    'llama1-7B': ('../llama-weights/llama1-7B', model_config_llama1_7B),
-    'llama2-7B': ('../llama-weights/llama2-7B', model_config_llama2_7B),
-    'llama2-70B': ('../llama-weights/llama2-70B', model_config_llama2_70B),
+    'llama1-7B':  (pjoin(BASE_PATH, 'llama1-7B'), model_config_llama1_7B),
+    'llama2-7B':  (pjoin(BASE_PATH, 'llama2-7B'), model_config_llama2_7B),
+    'llama2-70B': (pjoin(BASE_PATH, 'llama2-70B'), model_config_llama2_70B),
 }
 
 def convert(target: str) -> None:
