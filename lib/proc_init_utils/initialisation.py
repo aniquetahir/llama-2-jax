@@ -1,5 +1,5 @@
 import os
-from typing import Optional
+from typing import Optional, Union
 
 def _find_free_port() -> int:
     import socket
@@ -33,7 +33,7 @@ def initialise_gpu(cuda_visible_devices: Optional[str]=None) -> None:
 
     _post_init_general()
 
-def initialise_tpu(accelerator_type: str, n_devices: int | None=None, rank: int | None=None) -> None:
+def initialise_tpu(accelerator_type: str, n_devices: Union[int, None]=None, rank: Union[int, None]=None) -> None:
     os.environ['JAX_PLATFORMS'] = ''
 
     if accelerator_type == 'v4-16':
