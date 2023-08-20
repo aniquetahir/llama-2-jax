@@ -95,7 +95,7 @@ def main() -> None:
     # initialise_tpu('v4-16', n_devices=8, rank=0)
     is_process_0 = jax.process_index() == 0
     cpu_device = jax.devices('cpu')[0]
-    gpu_devices = jax.devices('gpu')[0]
+    gpu_device = jax.devices('gpu')[0]
 
     # if is_process_0:
     #     import wandb
@@ -111,7 +111,7 @@ def main() -> None:
     LoraConfig = namedtuple('LoraConfig', ['LORA_R', 'LORA_ALPHA', 'LORA_DROPOUT'])
     loraConfig = LoraConfig(LORA_R=LORA_R, LORA_ALPHA=LORA_ALPHA, LORA_DROPOUT=LORA_DROPOUT)
 
-    with jax.default_device(gpu_devices):
+    with jax.default_device(cpu_device):
         params = load_params('llama2-7B.pickle')
         # params_lora = LlamaLoraModel(loraConfig, params)
         pass
