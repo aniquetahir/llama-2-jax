@@ -2,6 +2,7 @@ import json
 import os
 from torch.utils.data import Dataset
 from typing import Literal, Union
+from tqdm import tqdm
 
 
 
@@ -13,7 +14,9 @@ def generate_prompt(instruction, input=None):
 {instruction}
 
 ### Input:
-{input}"""
+{input}
+
+### Response:\n"""
     else:
         return f"""Below is an instruction that describes a task. Write a response that appropriately completes the request.
 
@@ -22,7 +25,7 @@ def generate_prompt(instruction, input=None):
 
 ### Response:\n"""
 
-def load_alpaca_data(*, split=Union[Literal['train'], Literal['test']], path=None, split_percent=0.8):
+def load_alpaca_data(*, split=Union[Literal['train'], Literal['test']], path=None, split_percent=0.8, tokenizer=None, max_len=512):
     path = os.path.join(path)
     res = []
     with open(path) as f:
@@ -36,9 +39,15 @@ def load_alpaca_data(*, split=Union[Literal['train'], Literal['test']], path=Non
     else:
         raise ValueError(f'Invalid split: {split}')
 
-    for datum in data:
+    print('Processing data...')
+    for datum in tqdm(data):
         question = generate_prompt(datum['instruction'], datum['input'])
         answer = datum['output']
+        # check length of question + answer
+        inp_ids = tokenizer(question + answer, add_special_tokens=False, return_attention_mask=False).input_ids
+        if len(inp_ids) + 3 > max_len:
+            continue
+
         res.append((question, answer))
 
     return res
@@ -57,8 +66,8 @@ def load_data(*, split=Union[Literal['train'], Literal['test']]):
     return res
 
 class AlpacaDataset(Dataset):
-    def __init__(self, *, path: str, split=Union[Literal['train'], Literal['test']], split_percentage=0.8) -> None:
-        self.data = load_alpaca_data(split=split, path=path, split_percent=split_percentage)
+    def __init__(self, *, path: str, split=Union[Literal['train'], Literal['test']], split_percentage=0.8, tokenizer=None, max_len=512) -> None:
+        self.data = load_alpaca_data(split=split, path=path, split_percent=split_percentage, tokenizer=tokenizer, max_len=max_len)
         super().__init__()
 
     def __getitem__(self, idx: int):

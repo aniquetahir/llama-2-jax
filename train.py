@@ -14,7 +14,8 @@ from typing import Any, Callable, Optional
 from lib.model import LlamaModel, Decoder, Attention
 
 from lib.dataloader import LlamaDataLoader
-from lib.gsm_data import GSMDataset, TrainData, gsm_collate_fn_train
+from lib.alpaca_data import AlpacaDataset, TrainData, alpaca_collate_fn_train
+# from lib.gsm_data import GSMDataset, TrainData, gsm_collate_fn_train
 from lib.loss import cross_entropy_loss
 from lib.model import Llama, llama_model, model_config_llama2_7B,llama_model_lora
 from lib.multihost_utils import shard_model_params_to_multihost
@@ -29,6 +30,7 @@ from jax.sharding import Mesh, NamedSharding, PartitionSpec, PositionalSharding
 from functools import partial
 import chex
 from collections import namedtuple
+import pickle
 
 
 
@@ -88,7 +90,7 @@ def main() -> None:
     lr = 0.0001
     batch_size = 1
     n_accumulation_steps = 8
-    max_len = 512
+    max_len = 2000
     n_epochs = 7
     seed = 3407
 
@@ -104,8 +106,11 @@ def main() -> None:
 
     key = rand.PRNGKey(seed)
     tokenizer = LlamaTokenizer.from_pretrained(pjoin(BASE_WEIGHTS_PATH, 'llama2-7B'))
-    dataset = GSMDataset(split='train')
-    collate_fn = partial(gsm_collate_fn_train, tokenizer, max_len)
+    dataset = AlpacaDataset(split='train', path='./wikitable_train.json', tokenizer=tokenizer, max_len=max_len)
+    collate_fn = partial(alpaca_collate_fn_train, tokenizer, max_len)
+    # dataset = GSMDataset(split='train')
+    # collate_fn = partial(gsm_collate_fn_train, tokenizer, max_len)
+
     dataloader = LlamaDataLoader(dataset, collate_fn, batch_size, seed)
 
     LoraConfig = namedtuple('LoraConfig', ['LORA_R', 'LORA_ALPHA', 'LORA_DROPOUT'])
@@ -212,9 +217,11 @@ def main() -> None:
     # opt_state = optimizer.init(params)
     opt_state = optimizer.init(lora_params)
 
+    num_batches = len(dataloader)
+    verbosity_freq = num_batches // 100
 
-    for _ in range(n_epochs):
-        pbar = tqdm(total=len(dataloader) // n_accumulation_steps)
+    for epoch in tqdm(range(n_epochs)):
+        # pbar = tqdm(total=len(dataloader) // n_accumulation_steps)
         step_loss = 0.0
         total_loss = jnp.zeros(())
 
@@ -230,12 +237,21 @@ def main() -> None:
         for step, data_batch in enumerate(dataloader):
             start_time = time.time()
             lora_params, opt_state, total_loss, loss, key = train_step_lora(lora_params, loraConfig, params, opt_state, total_loss, data_batch, key)
-            print(total_loss)
+            if step % verbosity_freq == 0:
+                print(f'total_loss: {total_loss}, loss: {loss}')
             # if is_process_0:
             #     jax.debug.callback(report_to_wandb, start_time, opt_state, loss)
+        # save lora params for this epoch
+        with open(f'lora_epoch_{epoch}.pickle', 'wb') as f:
+            pickle.dump(lora_params, f)
+
 
         # if is_process_0:
         #     wandb.log({'epoch loss': total_loss.item() / (step + 1)})
+
+    # save lora params for this run
+    with open(f'lora_final.pickle', 'wb') as f:
+        pickle.dump(lora_params, f)
 
     gathered_params = process_allgather(lora_params)
     if is_process_0:
