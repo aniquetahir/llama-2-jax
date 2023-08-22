@@ -3,6 +3,7 @@ import os
 from torch.utils.data import Dataset
 from typing import Literal, Union
 from tqdm import tqdm
+import numpy as np
 
 
 
@@ -25,7 +26,8 @@ def generate_prompt(instruction, input=None):
 
 ### Response:\n"""
 
-def load_alpaca_data(*, split=Union[Literal['train'], Literal['test']], path=None, split_percent=0.8, tokenizer=None, max_len=512):
+def load_alpaca_data(*, split=Union[Literal['train'], Literal['test']], path=None,
+                     split_percent=0.8, tokenizer=None, max_len=512, alpaca_mix=0.3):
     path = os.path.join(path)
     res = []
     with open(path) as f:
@@ -50,6 +52,22 @@ def load_alpaca_data(*, split=Union[Literal['train'], Literal['test']], path=Non
 
         res.append((question, answer))
 
+    # add alpaca data
+    data_amount = int(len(res) * alpaca_mix)
+    with open('./alpaca_data_cleaned.json', 'r') as f:
+        alpaca_data = json.load(f)
+    num_alpaca = len(alpaca_data)
+    data_amount = min(data_amount, num_alpaca)
+    alpaca_idxs = np.random.choice(num_alpaca, data_amount, replace=False)
+    for idx in tqdm(alpaca_idxs):
+        question  = generate_prompt(alpaca_data[idx]['instruction'], alpaca_data[idx]['input'])
+        answer = datum['output']
+
+        inp_ids = tokenizer(question + answer, add_special_tokens=False, return_attention_mask=False).input_ids
+        if len(inp_ids) + 3 > max_len:
+            continue
+        res.append((question, answer))
+
     return res
 
 
@@ -66,8 +84,10 @@ def load_data(*, split=Union[Literal['train'], Literal['test']]):
     return res
 
 class AlpacaDataset(Dataset):
-    def __init__(self, *, path: str, split=Union[Literal['train'], Literal['test']], split_percentage=0.8, tokenizer=None, max_len=512) -> None:
-        self.data = load_alpaca_data(split=split, path=path, split_percent=split_percentage, tokenizer=tokenizer, max_len=max_len)
+    def __init__(self, *, path: str, split=Union[Literal['train'], Literal['test']],
+                 split_percentage=0.8, tokenizer=None, max_len=512, alpaca_mix=0.3) -> None:
+        self.data = load_alpaca_data(split=split, path=path, split_percent=split_percentage,
+                                     tokenizer=tokenizer, max_len=max_len, alpaca_mix=alpaca_mix)
         super().__init__()
 
     def __getitem__(self, idx: int):
