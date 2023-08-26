@@ -61,7 +61,7 @@ def load_alpaca_data(*, split=Union[Literal['train'], Literal['test']], path=Non
     alpaca_idxs = np.random.choice(num_alpaca, data_amount, replace=False)
     for idx in tqdm(alpaca_idxs):
         question  = generate_prompt(alpaca_data[idx]['instruction'], alpaca_data[idx]['input'])
-        answer = datum['output']
+        answer = alpaca_data[idx]['output']
 
         inp_ids = tokenizer(question + answer, add_special_tokens=False, return_attention_mask=False).input_ids
         if len(inp_ids) + 3 > max_len:

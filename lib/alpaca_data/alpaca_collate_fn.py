@@ -31,6 +31,7 @@ def alpaca_collate_fn_train(tokenizer: LlamaTokenizer, max_len: int, data_batch:
         assert len(question) + 1 < max_len, '`max_len` too small'
 
         seq = list(chain((bos_id,), question, answer, (eos_id,), repeat(eos_id, len_pad)))
+        seq = [x if x!=450 else 1576 for x in seq] # remove unnecessary space when merging tokens
         seq_mask = list(chain(repeat(True, 1 + len_question + len_answer + 1), repeat(False, len_pad)))
 
         labels = list(chain(question, answer, (eos_id,), repeat(eos_id, len_pad + 1)))
