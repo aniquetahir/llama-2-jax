@@ -129,6 +129,7 @@ if __name__ == "__main__":
         return NamedSharding(mesh, pspec)
 
     def param_shard_func(path, v):
+        # breakpoint()
         if 'q_proj' in path:
             return jax.device_put(v, mesh_sharding(P(None, None, None, 'p', None)))
             # parallelize on the 3rd index (count 5)
@@ -144,11 +145,13 @@ if __name__ == "__main__":
         elif 'gate_proj' in path or 'up_proj' in path:
             # parallelize on the 1st index (count 3)
             return jax.device_put(v, mesh_sharding(P(None, 'p', None)))
+        elif 'down_proj' in path:
+            # parallelize on the 0th index (count 3)
+            return jax.device_put(v, mesh_sharding(P('p', None, None)))
         else:
             # replicate across all gpus
             return jax.device_put(v, mesh_sharding(P(*((None,) * len(v.shape)))))
 
-    params = tree.map_structure_with_path(param_shard_func, params)
 
 
     # extract q_proj and v_proj from params
