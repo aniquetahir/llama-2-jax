@@ -4,6 +4,7 @@ from os.path import join as pjoin
 import tree
 import json
 os.chdir('/scratch/artahir/compressed_code/llama2jax/llama-2-jax')
+sys.path.append('/scratch/artahir/compressed_code/llama2jax/llama-2-jax')
 
 INIT_PARAMS_PATH = 'wikisql_lora/merged.pickle'
 TRAIN_DATA_PATH = 'bard_data_alpaca.json'
