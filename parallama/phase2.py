@@ -32,7 +32,7 @@ from typing import Any, Callable, Optional
 from lib.dataloader import LlamaDataLoader
 from lib.alpaca_data import AlpacaDataset, TrainData, alpaca_collate_fn_train
 from lib.loss import cross_entropy_loss
-from lib.model import Llama, llama_model, model_config_llama2_7B,llama_model_lora
+from lib.model import Llama, llama_model, llama_model_lora, model_config_llama2_13B
 from lib.param_utils import load_params, save_params
 from os.path import join as pjoin
 
@@ -58,7 +58,7 @@ gpu_sharding_mp = gpu_sharding_mp.reshape((1, len(gpu_devices)))
 @jax.value_and_grad
 def train_forward_lora(lora_params, lora_config, params: Llama, data_batch: TrainData, *, key: rand.KeyArray):
     seq, seq_mask, labels, labels_mask = data_batch
-    outputs = llama_model_lora(lora_params, lora_config, params.model, seq, seq_mask, key=key, model_config=model_config_llama2_7B)
+    outputs = llama_model_lora(lora_params, lora_config, params.model, seq, seq_mask, key=key, model_config=model_config_llama2_13B)
     logits = outputs @ params.lm_head
     loss = cross_entropy_loss(logits, labels, mask=labels_mask)
     return loss
@@ -75,7 +75,7 @@ def train_step_lora(lora_params, lora_config, params: Llama, opt_state: Any, tot
 @jax.value_and_grad
 def train_forward(params: Llama, data_batch: TrainData, *, key: rand.KeyArray):
     seq, seq_mask, labels, labels_mask = data_batch
-    outputs = llama_model(params.model, seq, seq_mask, key=key, model_config=model_config_llama2_7B)
+    outputs = llama_model(params.model, seq, seq_mask, key=key, model_config=model_config_llama2_13B)
     logits = outputs @ params.lm_head
     loss = cross_entropy_loss(logits, labels, mask=labels_mask)
     return loss
