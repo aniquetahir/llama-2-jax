@@ -70,24 +70,6 @@ def train_step_lora(lora_params, lora_config, params: Llama, opt_state: Any, tot
     lora_params = optax.apply_updates(lora_params, updates)
     return lora_params, opt_state, total_loss, loss, key
 
-@jax.value_and_grad
-def train_forward(params: Llama, data_batch: TrainData, *, key: rand.KeyArray):
-    seq, seq_mask, labels, labels_mask = data_batch
-    outputs = llama_model(params.model, seq, seq_mask, key=key, model_config=model_config_llama2_7B)
-    logits = outputs @ params.lm_head
-    loss = cross_entropy_loss(logits, labels, mask=labels_mask)
-    return loss
-
-@jax.jit
-def train_step(params: Llama, opt_state: Any, total_loss: Array, data_batch: TrainData, key: rand.KeyArray) -> tuple[Llama, Any, Array, Array, rand.KeyArray]:
-    key, subkey = rand.split(key)
-    loss, grads = train_forward(params, data_batch, key=subkey)
-    total_loss += loss
-    updates, opt_state = optimize(grads, opt_state, params)  # type: ignore
-    params = optax.apply_updates(params, updates)
-    return params, opt_state, total_loss, loss, key
-
-
 lr = 0.0001
 batch_size = 1
 n_accumulation_steps = 8

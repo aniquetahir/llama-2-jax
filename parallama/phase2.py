@@ -170,31 +170,6 @@ if __name__ == "__main__":
         v_lora_A = rand.normal(split_va, (DB, H, N_HEADS, LORA_R), dtype=jnp.bfloat16)
         v_lora_B = jnp.zeros((DB, LORA_R, N_HEADS, D_K), dtype=jnp.bfloat16)
 
-    # shard the lora params
-    q_lora_A = jax.device_put(q_lora_A, mesh_sharding(P(None, None, None, 'p', None)))
-    q_lora_B = jax.device_put(q_lora_B, mesh_sharding(P(None, None, None, 'p', None)))
-    v_lora_A = jax.device_put(v_lora_A, mesh_sharding(P(None, None, 'p', None)))
-    v_lora_B = jax.device_put(v_lora_B, mesh_sharding(P(None, None, 'p', None)))
-
-    lora_params = {
-        'q_lora_A': q_lora_A,
-        'q_lora_B': q_lora_B,
-        'v_lora_A': v_lora_A,
-        'v_lora_B': v_lora_B,
-    }# extract q_proj and v_proj from params
-    q_proj_shape, v_proj_shape = params.model.decoder.attention.q_proj.shape, params.model.decoder.attention.v_proj.shape
-
-    # create lora params from q_proj and v_proj
-    DB, H, N_REP, N_HEADS, D_K = q_proj_shape
-    assert v_proj_shape == (DB, H, N_HEADS, D_K,)
-
-    # create lora params from q_proj and v_proj
-    key, split_qa, split_va = rand.split(key, 3)
-    with jax.default_device(cpu_device):
-        q_lora_A = rand.normal(split_qa, (DB, H, N_REP, N_HEADS, LORA_R), dtype=jnp.bfloat16)
-        q_lora_B = jnp.zeros((DB, LORA_R, N_REP, N_HEADS, D_K), dtype=jnp.bfloat16)
-        v_lora_A = rand.normal(split_va, (DB, H, N_HEADS, LORA_R), dtype=jnp.bfloat16)
-        v_lora_B = jnp.zeros((DB, LORA_R, N_HEADS, D_K), dtype=jnp.bfloat16)
 
     # shard the lora params
     q_lora_A = jax.device_put(q_lora_A, mesh_sharding(P(None, None, None, 'p', None)))
