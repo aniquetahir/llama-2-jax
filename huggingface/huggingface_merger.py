@@ -7,18 +7,19 @@ import jax.numpy as jnp
 import torch
 
 from lib.param_utils import load_params
+from fire import Fire
 
-LLAMA_HF_7B_PATH = '/media/anique/Data/projects/llama-weights/llama2-7B'
-JAX_ORIG_MODEL_PATH = '../llama2-7B.pickle'
-JAX_PHASE2_PARAMS_PATH = '../phase2_params/merged.pkl'
-SAVE_PATH = '/media/anique/Data/projects/llama-weights/llama2-7B-merged'
+# LLAMA_HF_7B_PATH = '/media/anique/Data/projects/llama-weights/llama2-7B'
+# JAX_ORIG_MODEL_PATH = '../llama2-7B.pickle'
+# JAX_PHASE2_PARAMS_PATH = '../phase2_params/merged.pkl'
+# SAVE_PATH = '/media/anique/Data/projects/llama-weights/llama2-7B-merged'
 
-def lorize_huggingface_llama():
+def lorize_huggingface_llama(huggingface_path, jax_path, save_path):
     # load lora merged params in jax format
     with jax.default_device(jax.devices('cpu')[0]):
-        jax_params = load_params(JAX_PHASE2_PARAMS_PATH)
+        jax_params = load_params(jax_path)
 
-    model = LlamaForCausalLM.from_pretrained(LLAMA_HF_7B_PATH)
+    model = LlamaForCausalLM.from_pretrained(huggingface_path)
     print('model loaded')
     # load the huggingface model
 
@@ -56,8 +57,8 @@ def lorize_huggingface_llama():
 
 
     # save the model seperately
-    model.save_pretrained(SAVE_PATH)
-    print(f'model saved to {SAVE_PATH}')
+    model.save_pretrained(save_path)
+    print(f'model saved to {save_path}')
     # replace the model parameters with the lora merged params
 
     # save the updated model parameters
@@ -65,6 +66,7 @@ def lorize_huggingface_llama():
 
 if __name__ == "__main__":
     with torch.no_grad():
-        lorize_huggingface_llama()
+        Fire(lorize_huggingface_llama)
+        # lorize_huggingface_llama()
 
 
