@@ -88,7 +88,7 @@ def main() -> None:
 
     key = rand.PRNGKey(seed)
     tokenizer = LlamaTokenizer.from_pretrained(pjoin(LLAMA2_META_PATH, 'llama2-13B'))
-    dataset = AlpacaDataset(split='train', path='./bard_data_alpaca.json', tokenizer=tokenizer, max_len=max_len)
+    dataset = AlpacaDataset(split='train', path='./merged_dataset_insta_4chan.json', tokenizer=tokenizer, max_len=max_len, alpaca_mix=0.)
     collate_fn = partial(alpaca_collate_fn_train, tokenizer, max_len)
 
     dataloader = LlamaDataLoader(dataset, collate_fn, batch_size, seed)
