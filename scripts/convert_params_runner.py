@@ -6,13 +6,17 @@ import jax
 import jax.numpy as jnp
 from transformers import LlamaForCausalLM
 
-from lib.llama import check_llama, model_config_llama1_7B, model_config_llama2_70B, model_config_llama2_7B
+from lib.model import check_llama, model_config_llama1_7B, model_config_llama2_70B, model_config_llama2_7B, model_config_llama2_13B
 from lib.param_utils import convert_llama, save_params
+from os.path import join as pjoin
 
+SAVE_DIR = '/media/anique/Data/projects/llama_jax_weights'
+BASE_PATH = '/media/anique/Data/projects/llama-weights'
 pairs = {
-    'llama1-7B': ('../llama-weights/llama1-7B', model_config_llama1_7B),
-    'llama2-7B': ('meta-llama/Llama-2-7b-hf', model_config_llama2_7B),
-    'llama2-70B': ('meta-llama/Llama-2-70b-hf', model_config_llama2_70B),
+    'llama1-7B':  (pjoin(BASE_PATH, 'llama1-7B'), model_config_llama1_7B),
+    'llama2-7B':  (pjoin(BASE_PATH, 'llama2-7B'), model_config_llama2_7B),
+    'llama2-13B': (pjoin(BASE_PATH, 'llama2-13B'), model_config_llama2_13B),
+    'llama2-70B': (pjoin(BASE_PATH, 'llama2-70B'), model_config_llama2_70B),
 }
 
 def convert(target: str) -> None:
@@ -21,7 +25,7 @@ def convert(target: str) -> None:
     params = convert_llama(model_pt, model_config=model_config)
     params = jax.tree_map(lambda x: x.astype(jnp.bfloat16), params)
     check_llama(params, model_config=model_config)
-    save_params(params, f'{target}.pickle')
+    save_params(params, pjoin(SAVE_DIR, f'{target}.pickle'))
 
 if __name__ == '__main__':
   fire.Fire(convert)

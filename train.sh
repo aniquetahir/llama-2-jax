@@ -1,0 +1,1 @@
+python merge_lora.py wikisql_lora/merged.pickle phase2_params/final_lora.pkl phase2_params/merged.pkl
