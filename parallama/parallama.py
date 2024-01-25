@@ -23,7 +23,7 @@ import optax
 import time
 from transformers import LlamaTokenizer
 from tqdm import tqdm
-from typing import Any, Callable, Optional
+from typing import Any, Callable, Optional, NamedTuple
 
 from lib.dataloader import LlamaDataLoader
 from lib.alpaca_data import AlpacaDataset, TrainData, alpaca_collate_fn_train
@@ -38,9 +38,19 @@ from collections import namedtuple
 import pickle
 
 optimize: Optional[Callable]
-BASE_WEIGHTS_PATH = '/media/anique/Data/projects/llama-weights'
+# BASE_WEIGHTS_PATH = '/media/anique/Data/projects/llama-weights'
 JAX_PARAMS_PATH = '/scratch/artahir/llama/jax_weights/llama2-13B.pickle'
 LLAMA2_META_PATH = '/scratch/artahir/llama/hf_weights'
+
+
+class ParallamaConfig(NamedTuple):
+    JAX_PARAMS_PATH: str
+    LLAMA2_HF_PATH: str
+    LORA_R: int = 16
+    LORA_ALPHA: int = 16
+    LORA_DROPOUT: float = 0.05
+
+
 LORA_R = 16
 LORA_ALPHA = 16
 LORA_DROPOUT = 0.05
@@ -89,7 +99,7 @@ def train_step(params: Llama, opt_state: Any, total_loss: Array, data_batch: Tra
 
 
 lr = 0.0001
-batch_size = 1
+batch_size = 10
 n_accumulation_steps = 8
 max_len = 2000
 n_epochs = 7
@@ -148,7 +158,7 @@ def main() -> None:
             return jax.device_put(v, mesh_sharding(P('p', None, None)))
         else:
             # replicate across all gpus
-            return jax.device_put(v, mesh_sharding(P(*((None,) * len(v.shape))))) 
+            return jax.device_put(v, mesh_sharding(P(*((None,) * len(v.shape)))))
 
 
     params = tree.map_structure_with_path(param_shard_func, params)
@@ -221,9 +231,9 @@ def main() -> None:
     with open(f'lora_final.pickle', 'wb') as f:
         pickle.dump(lora_params, f)
 
-    gathered_params = process_allgather(lora_params)
-    if is_process_0:
-        save_params(gathered_params, f'{lora_final_gathered}.pickle')  # type: ignore
+    # gathered_params = process_allgather(lora_params)
+    # if is_process_0:
+    #     save_params(gathered_params, f'{lora_final_gathered}.pickle')  # type: ignore
 
 
 if __name__ == "__main__":

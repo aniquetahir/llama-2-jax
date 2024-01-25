@@ -38,7 +38,7 @@ from collections import namedtuple
 import pickle
 
 optimize: Optional[Callable]
-BASE_WEIGHTS_PATH = '/media/anique/Data/projects/llama-weights'
+# BASE_WEIGHTS_PATH = '/media/anique/Data/projects/llama-weights'
 JAX_PARAMS_PATH = 'wikisql_lora/merged.pickle'
 LLAMA2_META_PATH = '/scratch/artahir/llama/hf_weights'
 LORA_R = 16

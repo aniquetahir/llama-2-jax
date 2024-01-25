@@ -14,7 +14,13 @@ from fire import Fire
 # JAX_PHASE2_PARAMS_PATH = '../phase2_params/merged.pkl'
 # SAVE_PATH = '/media/anique/Data/projects/llama-weights/llama2-7B-merged'
 
-def lorize_huggingface_llama(huggingface_path, jax_path, save_path):
+def lorize_huggingface_llama(huggingface_path: str, jax_path: str, save_path: str):
+    """
+    This function takes a huggingface llama model and replaces the q_proj and v_proj weights with the lora merged weights
+    :param huggingface_path: path to the huggingface llama model
+    :param jax_path: path to the lora merged params
+    :param save_path: path to save the updated huggingface llama model
+    """
     # load lora merged params in jax format
     with jax.default_device(jax.devices('cpu')[0]):
         jax_params = load_params(jax_path)
